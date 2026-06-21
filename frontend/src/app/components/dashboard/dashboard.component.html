@@ -1,0 +1,164 @@
+<div class="dashboard-container">
+  <!-- Fitness Goal Toggle Section -->
+  <div class="fitness-goal-section">
+    <h2>Fitness Goal</h2>
+    <div class="goal-buttons">
+      <button *ngFor="let goal of fitnessGoals"
+              [class.active]="selectedFitnessGoal === goal.goalType"
+              (click)="changeFitnessGoal(goal.goalType)"
+              class="goal-button">
+        {{ goal.goalType === 'WEIGHT_LOSS' ? '📉 Weight Loss' : goal.goalType === 'MAINTENANCE' ? '⚖️ Maintenance' : '💪 Muscle Gain' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Daily Calorie Budget Section -->
+  <div class="daily-budget-section">
+    <h2>Daily Calorie Budget</h2>
+    <div class="calorie-display">
+      <div class="calorie-progress">
+        <div class="progress-bar-container">
+          <div class="progress-bar" 
+               [style.width.%]="caloriePercentage"
+               [style.backgroundColor]="getCalorieBarColor()"></div>
+        </div>
+        <div class="calorie-info">
+          <span class="calorie-consumed">{{ dailyLog?.totalCalories | number:'1.0-0' }} cal</span>
+          <span class="calorie-target">/ {{ dailyLog?.dailyCalorieTarget }} cal</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Budget Exceeded Warning -->
+    <div *ngIf="dailyLog?.isBudgetExceeded" class="warning-modal">
+      <div class="warning-content">
+        <h3>⚠️ Daily Budget Exceeded!</h3>
+        <p>You've exceeded your daily calorie target.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Macronutrient Breakdown Section -->
+  <div class="macros-section">
+    <h2>Macronutrient Breakdown</h2>
+    <div class="macros-grid">
+      <!-- Protein -->
+      <div class="macro-card">
+        <h3>Protein</h3>
+        <div class="macro-progress">
+          <div class="macro-bar protein-bar"
+               [style.width.%]="getMacroPercentage(dailyLog?.totalProteinGrams, 140)"></div>
+        </div>
+        <div class="macro-info">
+          <span class="macro-value">{{ dailyLog?.totalProteinGrams | number:'1.0-1' }}g</span>
+          <span class="macro-target">/ 140g</span>
+        </div>
+      </div>
+
+      <!-- Carbs -->
+      <div class="macro-card">
+        <h3>Carbs</h3>
+        <div class="macro-progress">
+          <div class="macro-bar carbs-bar"
+               [style.width.%]="getMacroPercentage(dailyLog?.totalCarbsGrams, 280)"></div>
+        </div>
+        <div class="macro-info">
+          <span class="macro-value">{{ dailyLog?.totalCarbsGrams | number:'1.0-1' }}g</span>
+          <span class="macro-target">/ 280g</span>
+        </div>
+      </div>
+
+      <!-- Fats -->
+      <div class="macro-card">
+        <h3>Fats</h3>
+        <div class="macro-progress">
+          <div class="macro-bar fats-bar"
+               [style.width.%]="getMacroPercentage(dailyLog?.totalFatsGrams, 80)"></div>
+        </div>
+        <div class="macro-info">
+          <span class="macro-value">{{ dailyLog?.totalFatsGrams | number:'1.0-1' }}g</span>
+          <span class="macro-target">/ 80g</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Meal Section -->
+  <div class="add-meal-section">
+    <h2>Log a Meal</h2>
+    <div class="meal-input-container">
+      <div class="input-group">
+        <label>Search Food:</label>
+        <input type="text"
+               [(ngModel)]="searchFoodName"
+               (input)="searchFoods()"
+               placeholder="Search for food..."
+               class="search-input">
+      </div>
+
+      <div class="input-group">
+        <label>Select Food:</label>
+        <select [(ngModel)]="selectedFood" class="select-input">
+          <option value="">-- Select a food --</option>
+          <option *ngFor="let food of filteredFoods" [value]="food.foodId">
+            {{ food.foodName }}
+          </option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label>Portion Weight (grams):</label>
+        <input type="number"
+               [(ngModel)]="portionWeight"
+               min="1"
+               placeholder="Enter weight in grams"
+               class="number-input">
+      </div>
+
+      <div class="button-group">
+        <button (click)="addMeal()" [disabled]="isLoading" class="btn btn-add-meal">
+          {{ isLoading ? 'Adding...' : '➕ Add Meal' }}
+        </button>
+        <button (click)="simulateImageUpload()" [disabled]="isLoading" class="btn btn-image-upload">
+          {{ isLoading ? 'Processing...' : '📷 Image Upload' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Daily History Section -->
+  <div class="history-section">
+    <h2>Today's Meals</h2>
+    <div class="meals-list">
+      <div *ngIf="!dailyLog?.meals || dailyLog.meals.length === 0" class="no-meals">
+        <p>No meals logged yet. Start by adding your first meal!</p>
+      </div>
+
+      <div *ngFor="let meal of dailyLog?.meals" class="meal-item">
+        <div class="meal-header">
+          <h4 class="meal-name">{{ meal.foodName }}</h4>
+          <button (click)="deleteMeal(meal.entryId)" class="btn-delete-meal" title="Delete meal">
+            🗑️
+          </button>
+        </div>
+        <div class="meal-details">
+          <span class="meal-detail">
+            <strong>Portion:</strong> {{ meal.portionWeightGrams }}g
+          </span>
+          <span class="meal-detail">
+            <strong>Calories:</strong> {{ meal.calories | number:'1.0-1' }} cal
+          </span>
+          <span class="meal-detail">
+            <strong>Protein:</strong> {{ meal.proteinGrams | number:'1.0-1' }}g
+          </span>
+          <span class="meal-detail">
+            <strong>Carbs:</strong> {{ meal.carbsGrams | number:'1.0-1' }}g
+          </span>
+          <span class="meal-detail">
+            <strong>Fats:</strong> {{ meal.fatsGrams | number:'1.0-1' }}g
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.angular/
+target/
+.DS_Store
+*.log
+.env
+.idea/
+.vscode/
+*.class
+*.jar
